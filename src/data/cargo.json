@@ -1,0 +1,13 @@
+{
+  "construction-supplies": {
+    "id": "construction-supplies",
+    "name": "Construction Supplies",
+    "description": "Sealed structural crates for the lunar receiving depot.",
+    "unitMassKg": 180,
+    "unitVolume": 0.75,
+    "unitCostCredits": 280,
+    "stock": 3,
+    "maxLaunchLoadG": 45,
+    "maxArrivalSpeedKms": 1.5
+  }
+}

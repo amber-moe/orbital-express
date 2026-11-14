@@ -1,0 +1,30 @@
+{
+  "simulation": {
+    "fixedStepSeconds": 4,
+    "maxMissionSeconds": 691200,
+    "receptionZoneRadiusKm": 12000,
+    "dockingSpeedKms": 0.15,
+    "playbackRate": 45000,
+    "maxPhysicsStepsPerFrame": 360,
+    "spinUpSeconds": 1.6,
+    "departureSeconds": 1.4,
+    "approachSeconds": 1.4
+  },
+  "launcher": {
+    "efficiency": 0.62,
+    "fixedCycleLossGj": 0.22,
+    "referenceMassKg": 800
+  },
+  "model": {
+    "staticMoon": true,
+    "omitted": [
+      "Earth atmosphere, drag and aerodynamic heating",
+      "Detailed ascent, staging and structural dynamics",
+      "Earth rotation and launch-site latitude",
+      "Lunar orbital motion around Earth",
+      "Solar and other third-body gravity",
+      "Continuous-thrust guidance, navigation and landing dynamics",
+      "Relativistic effects and non-spherical gravity fields"
+    ]
+  }
+}

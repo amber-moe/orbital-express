@@ -1,0 +1,32 @@
+{
+  "name": "orbital-express",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Orbital Express — a browser Earth-to-Moon delivery slice built with Vue 3, TypeScript, Vite and Three.js.",
+  "packageManager": "npm@9.5.0",
+  "engines": {
+    "node": "^20.0.0 || >=22.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "vite build",
+    "preview": "vite preview --port 4173 --strictPort"
+  },
+  "dependencies": {
+    "three": "0.187.0",
+    "vue": "3.5.45"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "@types/three": "0.187.0",
+    "@vitejs/plugin-vue": "5.2.4",
+    "typescript": "5.9.3",
+    "vite": "6.4.6",
+    "vitest": "3.2.7",
+    "vue-tsc": "2.2.12"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "capsule": {
+    "name": "Courier Capsule",
+    "dryMassKg": 240,
+    "maxVolume": 3.0,
+    "maxMassKg": 1500
+  },
+  "protection": {
+    "standard": {
+      "id": "standard",
+      "name": "Standard",
+      "description": "Light cargo frame. Lowest mass and cost, but limited launch-load tolerance.",
+      "massKg": 30,
+      "volume": 0.1,
+      "costCredits": 120,
+      "launchLoadMultiplier": 1.0
+    },
+    "reinforced": {
+      "id": "reinforced",
+      "name": "Reinforced",
+      "description": "Braced cargo frame. Doubles the modeled launch-load limit at a mass and cost penalty.",
+      "massKg": 95,
+      "volume": 0.25,
+      "costCredits": 420,
+      "launchLoadMultiplier": 2.0
+    }
+  },
+  "modules": {
+    "small": {
+      "id": "small",
+      "name": "Small",
+      "description": "Low-mass braking package. Enough for small corrections, not this lunar encounter.",
+      "massKg": 45,
+      "volume": 0.15,
+      "costCredits": 350,
+      "baseBrakeReserveKms": 0.62
+    },
+    "large": {
+      "id": "large",
+      "name": "Large",
+      "description": "High-capacity braking package for terminal approach.",
+      "massKg": 120,
+      "volume": 0.35,
+      "costCredits": 820,
+      "baseBrakeReserveKms": 2.3
+    }
+  }
+}

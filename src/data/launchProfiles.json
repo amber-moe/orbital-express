@@ -1,0 +1,16 @@
+{
+  "balanced": {
+    "id": "balanced",
+    "name": "Balanced",
+    "description": "Validated low-energy departure. A two-kilometre rotor releases the capsule at 1.00 km/s; a fictional ascent stage adds 9.923817 km/s prograde.",
+    "status": "verified",
+    "rotorRadiusM": 2000,
+    "rotorAngularSpeedRadps": 0.5,
+    "releaseAngleDeg": 180,
+    "insertionRadiusKm": 6571,
+    "assistedAscentDeltaVKms": 9.923817,
+    "ascentStageCapacityKms": 10.0,
+    "direction": "prograde",
+    "verificationNote": "Reproducible: departure at 6,571 km with 10.923817 km/s prograde, fixed 4 s step. The capsule enters the 12,000 km lunar reception zone at about 3.59 days. See MODEL_NOTES.md."
+  }
+}

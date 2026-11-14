@@ -1,0 +1,16 @@
+{
+  "first-delivery": {
+    "id": "first-delivery",
+    "name": "First Delivery",
+    "client": "Selene Receiving Depot",
+    "brief": "Deliver construction supplies to the lunar receiving depot. The depot accepts cargo only inside its marked reception zone and only after the capsule has braked to a safe relative speed.",
+    "cargoId": "construction-supplies",
+    "requiredQuantity": 2,
+    "allowedQuantities": [1, 2, 3],
+    "startingCredits": 4000,
+    "startingEnergyGj": 3.0,
+    "launchFeeCredits": 400,
+    "rewardCredits": 3200,
+    "destination": "Moon · Selene Receiving Depot"
+  }
+}

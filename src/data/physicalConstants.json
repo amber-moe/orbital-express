@@ -1,0 +1,15 @@
+{
+  "earth": {
+    "muKm3S2": 398600.435507,
+    "radiusKm": 6371.0
+  },
+  "moon": {
+    "muKm3S2": 4902.800118,
+    "radiusKm": 1737.4
+  },
+  "earthMoonMeanDistanceKm": 384400,
+  "moonPositionKm": {
+    "x": 384400,
+    "y": 0
+  }
+}
