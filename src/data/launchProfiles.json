@@ -11,6 +11,6 @@
     "assistedAscentDeltaVKms": 9.923817,
     "ascentStageCapacityKms": 10.0,
     "direction": "prograde",
-    "verificationNote": "Reproducible: departure at 6,571 km with 10.923817 km/s prograde, fixed 4 s step. The capsule enters the 12,000 km lunar reception zone at about 3.59 days. See MODEL_NOTES.md."
+    "verificationNote": "Reproducible: departure at 6,571 km with 10.923817 km/s prograde, fixed 4 s step. The capsule enters the 12,000 km lunar reception zone at about 3.59 days. See README.md for scope and limitations."
   }
 }

@@ -8,6 +8,34 @@
     "unitCostCredits": 280,
     "stock": 3,
     "maxLaunchLoadG": 45,
-    "maxArrivalSpeedKms": 1.5
+    "maxArrivalSpeedKms": 1.5,
+    "accentColor": "#ffb43b",
+    "visualForm": "crate"
+  },
+  "supply-packs": {
+    "id": "supply-packs",
+    "name": "Supply Packs",
+    "description": "Light sealed consumable packs for the lunar receiving depot.",
+    "unitMassKg": 85,
+    "unitVolume": 0.4,
+    "unitCostCredits": 150,
+    "stock": 4,
+    "maxLaunchLoadG": 60,
+    "maxArrivalSpeedKms": 2.0,
+    "accentColor": "#55c98a",
+    "visualForm": "pack"
+  },
+  "research-modules": {
+    "id": "research-modules",
+    "name": "Research Modules",
+    "description": "Ruggedized lunar research modules with strict load and arrival limits.",
+    "unitMassKg": 120,
+    "unitVolume": 0.55,
+    "unitCostCredits": 620,
+    "stock": 2,
+    "maxLaunchLoadG": 25,
+    "maxArrivalSpeedKms": 0.8,
+    "accentColor": "#a78bfa",
+    "visualForm": "case"
   }
 }

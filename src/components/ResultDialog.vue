@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
+import type { CompanySettlement, GameMode } from '../game/company'
 import { formatDuration } from '../game/outcomeMessages'
 import type { Outcome, OutcomeKind } from '../game/types'
 
@@ -11,6 +12,9 @@ const props = defineProps<{
   contractComplete: boolean
   rewardCredits: number
   requiredQuantity: number
+  loadedQuantity: number
+  mode: GameMode
+  settlement: CompanySettlement | null
 }>()
 
 const emit = defineEmits<{
@@ -37,8 +41,16 @@ watch(
   { immediate: true },
 )
 
-function successKind(kind: OutcomeKind | undefined): boolean {
-  return kind === 'delivered' || kind === 'contract-shortfall'
+function resultTone(kind: OutcomeKind | undefined): 'ok' | 'warn' | 'bad' {
+  if (kind === 'delivered') return 'ok'
+  if (kind === 'contract-shortfall') return 'warn'
+  return 'bad'
+}
+
+function resultIcon(kind: OutcomeKind | undefined): string {
+  if (kind === 'delivered') return '✓'
+  if (kind === 'contract-shortfall') return '!'
+  return '×'
 }
 </script>
 
@@ -49,11 +61,9 @@ function successKind(kind: OutcomeKind | undefined): boolean {
     aria-labelledby="result-title"
     @close="emit('close')"
   >
-    <div v-if="result" class="result" :class="successKind(result.kind) ? 'ok' : 'bad'">
+    <div v-if="result" class="result" :class="resultTone(result.kind)">
       <header class="result-head">
-        <span class="icon" aria-hidden="true">
-          {{ successKind(result.kind) ? '✓' : '×' }}
-        </span>
+        <span class="icon" aria-hidden="true">{{ resultIcon(result.kind) }}</span>
         <div>
           <span class="eyebrow">MISSION REPORT</span>
           <h2 id="result-title">{{ title }}</h2>
@@ -82,8 +92,12 @@ function successKind(kind: OutcomeKind | undefined): boolean {
           <dd>{{ result.brakeRemainingKms.toFixed(3) }} km/s</dd>
         </div>
         <div>
-          <dt>CRATES</dt>
+          <dt>ACCEPTED</dt>
           <dd>{{ result.deliveredQuantity }} / {{ requiredQuantity }}</dd>
+        </div>
+        <div>
+          <dt>LOADED</dt>
+          <dd>{{ loadedQuantity }}</dd>
         </div>
         <div>
           <dt>CONTRACT</dt>
@@ -93,14 +107,38 @@ function successKind(kind: OutcomeKind | undefined): boolean {
         </div>
       </dl>
 
+      <dl v-if="mode === 'company' && settlement" class="settlement">
+        <div>
+          <dt>FLIGHT COST</dt>
+          <dd>{{ settlement.cost.toLocaleString('en-US') }} cr</dd>
+        </div>
+        <div>
+          <dt>INCOME</dt>
+          <dd :class="{ accent: settlement.income > 0 }">
+            {{ settlement.income.toLocaleString('en-US') }} cr
+          </dd>
+        </div>
+        <div>
+          <dt>NET</dt>
+          <dd :class="settlement.net >= 0 ? 'accent' : 'bad'">
+            {{ settlement.net >= 0 ? '+' : '' }}{{ settlement.net.toLocaleString('en-US') }} cr
+          </dd>
+        </div>
+        <div>
+          <dt>BALANCE</dt>
+          <dd>{{ settlement.balance.toLocaleString('en-US') }} cr</dd>
+        </div>
+      </dl>
+
       <p class="note">
-        Preview and flight share the same fixed-step simulation and terminal-event rules. The final
-        descent is an animation after reception acceptance; it is not a validated landing model.
+        Planning checks and flight use the same mission model. The final descent is illustrative
+        after reception acceptance; it is not a validated landing model.
+        <template v-if="mode === 'company'"> Company result saved in this browser.</template>
       </p>
 
       <div class="buttons">
         <button ref="retryButton" type="button" class="primary" @click="emit('retry')">
-          Retry attempt
+          {{ mode === 'company' ? 'Back to jobs' : 'Retry attempt' }}
         </button>
         <button type="button" class="secondary" @click="emit('close')">
           Review trajectory
@@ -115,8 +153,8 @@ function successKind(kind: OutcomeKind | undefined): boolean {
   border: 0;
   padding: 0;
   background: transparent;
-  max-width: min(560px, calc(100vw - 32px));
-  width: 560px;
+  max-width: min(600px, calc(100vw - 32px));
+  width: 600px;
   color: var(--ivory);
 }
 
@@ -128,6 +166,12 @@ function successKind(kind: OutcomeKind | undefined): boolean {
     radial-gradient(500px 200px at 20% 0%, rgba(76, 228, 209, 0.08), transparent 70%),
     linear-gradient(180deg, #0e1c2b, #08121d);
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
+}
+
+.result.warn {
+  background:
+    radial-gradient(500px 200px at 20% 0%, rgba(255, 180, 59, 0.08), transparent 70%),
+    linear-gradient(180deg, #0e1c2b, #08121d);
 }
 
 .result.bad {
@@ -154,6 +198,12 @@ function successKind(kind: OutcomeKind | undefined): boolean {
   background: rgba(76, 228, 209, 0.08);
 }
 
+.warn .icon {
+  border-color: rgba(255, 180, 59, 0.45);
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
 .bad .icon {
   border-color: rgba(255, 107, 107, 0.4);
   color: var(--error);
@@ -163,16 +213,20 @@ function successKind(kind: OutcomeKind | undefined): boolean {
 .eyebrow {
   display: block;
   font-family: var(--font-mono);
-  font-size: 7px;
-  letter-spacing: 0.18em;
+  font-size: 10px;
+  letter-spacing: 0.16em;
   color: var(--muted-dim);
 }
 
 h2 {
-  font-size: 24px;
+  font-size: 27px;
   line-height: 1.1;
   font-weight: 600;
   margin-top: 2px;
+}
+
+.warn h2 {
+  color: #ffdda8;
 }
 
 .bad h2 {
@@ -180,9 +234,9 @@ h2 {
 }
 
 .detail {
-  margin-top: 14px;
-  font-size: 12px;
-  line-height: 1.55;
+  margin-top: 15px;
+  font-size: 13.5px;
+  line-height: 1.6;
   color: var(--muted);
 }
 
@@ -198,15 +252,15 @@ h2 {
 
 .stats dt {
   font-family: var(--font-mono);
-  font-size: 6px;
-  letter-spacing: 0.13em;
+  font-size: 9.5px;
+  letter-spacing: 0.11em;
   color: var(--muted-dim);
 }
 
 .stats dd {
-  margin: 2px 0 0;
+  margin: 3px 0 0;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--ivory);
   font-variant-numeric: tabular-nums;
 }
@@ -215,10 +269,43 @@ h2 {
   color: var(--cyan);
 }
 
+.settlement {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.settlement dt {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: var(--muted-dim);
+}
+
+.settlement dd {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ivory);
+  font-variant-numeric: tabular-nums;
+}
+
+.settlement dd.accent {
+  color: var(--cyan);
+}
+
+.settlement dd.bad {
+  color: var(--error);
+}
+
 .note {
-  margin-top: 12px;
-  font-size: 9px;
-  line-height: 1.5;
+  margin-top: 13px;
+  font-size: 11.5px;
+  line-height: 1.55;
   color: var(--muted-dim);
 }
 
@@ -230,11 +317,11 @@ h2 {
 
 .primary,
 .secondary {
-  padding: 10px 16px;
+  padding: 11px 18px;
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
+  font-size: 12px;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 

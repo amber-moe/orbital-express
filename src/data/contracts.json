@@ -6,11 +6,62 @@
     "brief": "Deliver construction supplies to the lunar receiving depot. The depot accepts cargo only inside its marked reception zone and only after the capsule has braked to a safe relative speed.",
     "cargoId": "construction-supplies",
     "requiredQuantity": 2,
-    "allowedQuantities": [1, 2, 3],
+    "allowedQuantities": [
+      1,
+      2,
+      3
+    ],
     "startingCredits": 4000,
     "startingEnergyGj": 3.0,
     "launchFeeCredits": 400,
     "rewardCredits": 3200,
-    "destination": "Moon · Selene Receiving Depot"
+    "destination": "Moon \u00b7 Selene Receiving Depot",
+    "orderLabel": "Construction Run",
+    "recommendedProtectionId": "reinforced",
+    "recommendedModuleId": "large",
+    "recommendedReleaseSpeedScale": 1
+  },
+  "supply-delivery": {
+    "id": "supply-delivery",
+    "name": "Supply Delivery",
+    "orderLabel": "Supply Delivery",
+    "client": "Selene Receiving Depot",
+    "brief": "Deliver consumable supply packs to the lunar receiving depot. Lighter cargo gives more braking margin, but the order still needs the full quantity inside the marked reception zone.",
+    "cargoId": "supply-packs",
+    "requiredQuantity": 3,
+    "allowedQuantities": [
+      1,
+      2,
+      3
+    ],
+    "startingCredits": 3800,
+    "startingEnergyGj": 3.0,
+    "launchFeeCredits": 400,
+    "rewardCredits": 2800,
+    "destination": "Moon \u00b7 Selene Receiving Depot",
+    "recommendedProtectionId": "standard",
+    "recommendedModuleId": "large",
+    "recommendedReleaseSpeedScale": 1
+  },
+  "precision-cargo": {
+    "id": "precision-cargo",
+    "name": "Precision Cargo",
+    "orderLabel": "Precision Cargo",
+    "client": "Selene Research Annex",
+    "brief": "Deliver a ruggedized research module. The cargo tolerates a lower launch load and a much stricter arrival speed than construction supplies. High reward, narrow margin.",
+    "cargoId": "research-modules",
+    "requiredQuantity": 1,
+    "allowedQuantities": [
+      1,
+      2
+    ],
+    "startingCredits": 5000,
+    "startingEnergyGj": 3.0,
+    "launchFeeCredits": 500,
+    "rewardCredits": 5500,
+    "destination": "Moon \u00b7 Selene Research Annex",
+    "recommendedProtectionId": "reinforced",
+    "recommendedModuleId": "large",
+    "recommendedReleaseSpeedScale": 0.98
   }
 }

@@ -1,0 +1,14 @@
+{
+  "project": "Orbital Express",
+  "assistance": {
+    "planning_documentation_review": ["ChatGPT"],
+    "implementation_and_verification": ["OpenCode"]
+  },
+  "shipped_generated_media": {
+    "image_generation_model_assets": false,
+    "video_generation_assets": false,
+    "concept_image_bundled": false
+  },
+  "shipped_visuals": "Original procedural Canvas 2D textures, CSS/SVG and runtime Three.js geometry.",
+  "notes": "See docs/AI_USAGE.md and README.md. No NASA branding or endorsement."
+}

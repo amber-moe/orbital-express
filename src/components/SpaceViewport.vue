@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { gameData } from '../game/data'
 import type { MissionController } from '../game/missionController'
 import {
   createSpaceScene,
+  type BodyScreenPoint,
   type SpaceSceneHandle,
 } from '../rendering/createSpaceScene'
 
@@ -12,48 +12,90 @@ const props = defineProps<{ controller: MissionController }>()
 const host = ref<HTMLDivElement | null>(null)
 const earthLabel = ref<HTMLDivElement | null>(null)
 const moonLabel = ref<HTMLDivElement | null>(null)
+const departureLabel = ref<HTMLDivElement | null>(null)
+const approachLabel = ref<HTMLDivElement | null>(null)
 const failed = ref(false)
 
 let handle: SpaceSceneHandle | null = null
 
-function positionLabel(
+function clampLeft(element: HTMLDivElement, centerX: number): number {
+  const halfWidth = (element.offsetWidth || 160) / 2
+  const hostWidth = host.value?.clientWidth ?? 0
+  return Math.min(
+    Math.max(centerX, halfWidth + 8),
+    Math.max(halfWidth + 8, hostWidth - halfWidth - 8),
+  )
+}
+
+function hide(element: HTMLDivElement | null): void {
+  if (element) element.dataset.visible = 'false'
+}
+
+function positionBodyLabel(
   element: HTMLDivElement | null,
-  x: number,
-  y: number,
-  radiusKm: number,
-  below = true,
+  body: BodyScreenPoint | null,
+  below: boolean,
 ): void {
-  if (!handle || !element) return
-  const center = handle.getScreenPoint(x, y)
-  const edge = handle.getScreenPoint(x, y + radiusKm)
-  if (!center || !edge) return
-  const radiusPx = Math.hypot(edge.x - center.x, edge.y - center.y)
-  element.style.left = `${center.x}px`
-  element.style.top = `${center.y + (below ? radiusPx + 10 : -radiusPx - 10)}px`
+  if (!element) return
+  if (!body) {
+    hide(element)
+    return
+  }
+  const hostWidth = host.value?.clientWidth ?? 0
+  const hostHeight = host.value?.clientHeight ?? 0
+  if (body.x < 0 || body.x > hostWidth || body.y < 0 || body.y > hostHeight) {
+    hide(element)
+    return
+  }
+  element.style.left = `${clampLeft(element, body.x)}px`
+  element.style.top = `${body.y + (below ? body.radiusPx + 10 : -body.radiusPx - 10)}px`
+  element.dataset.visible = 'true'
+}
+
+function positionConnectorLabel(
+  element: HTMLDivElement | null,
+  kind: 'departure' | 'approach',
+): void {
+  if (!element) return
+  const hostWidth = host.value?.clientWidth ?? 0
+  const hostHeight = host.value?.clientHeight ?? 0
+  const body = handle?.getBodyScreenPoint(kind === 'departure' ? 'earth' : 'moon') ?? null
+  const bodyVisible =
+    body !== null &&
+    body.x >= 0 &&
+    body.x <= hostWidth &&
+    body.y >= 0 &&
+    body.y <= hostHeight
+  const point = handle?.getConnectorScreenPoint(kind) ?? null
+  if (
+    !bodyVisible ||
+    !point ||
+    point.x < 18 ||
+    point.x > hostWidth - 18 ||
+    point.y < 18 ||
+    point.y > hostHeight - 18
+  ) {
+    hide(element)
+    return
+  }
+  element.style.left = `${clampLeft(element, point.x)}px`
+  element.style.top = `${point.y}px`
   element.dataset.visible = 'true'
 }
 
 function positionLabels(): void {
-  positionLabel(
-    earthLabel.value,
-    0,
-    0,
-    gameData.physicalConstants.earth.radiusKm,
-    false,
-  )
-  positionLabel(
-    moonLabel.value,
-    gameData.physicalConstants.moonPositionKm.x,
-    gameData.physicalConstants.moonPositionKm.y,
-    gameData.assumptions.simulation.receptionZoneRadiusKm,
-  )
+  if (!handle) return
+  positionBodyLabel(earthLabel.value, handle.getBodyScreenPoint('earth'), false)
+  positionBodyLabel(moonLabel.value, handle.getBodyScreenPoint('moon'), true)
+  positionConnectorLabel(departureLabel.value, 'departure')
+  positionConnectorLabel(approachLabel.value, 'approach')
 }
 
 onMounted(() => {
   if (!host.value) return
   try {
     handle = createSpaceScene(host.value, () => props.controller.getFrameState(), {
-      onLayout: positionLabels,
+      onView: positionLabels,
     })
     handle.start()
     positionLabels()
@@ -73,28 +115,41 @@ onBeforeUnmount(() => {
   <div ref="host" class="viewport">
     <template v-if="!failed">
       <div ref="earthLabel" class="body-label earth">
-        <strong>EARTH</strong>
-        <span>LAUNCH FACILITY · 6,571 km RING</span>
+        <strong>EARTH TERMINAL</strong>
+        <span>Launch facility</span>
       </div>
       <div ref="moonLabel" class="body-label moon">
-        <strong>MOON</strong>
-        <span>SELENE DEPOT · 12,000 km ZONE</span>
+        <strong>SELENE DEPOT</strong>
+        <span>Reception facility</span>
       </div>
+      <div
+        ref="departureLabel"
+        class="connector-label departure"
+        title="Schematic connector, not the simulated path"
+      >
+        Departure
+      </div>
+      <div
+        ref="approachLabel"
+        class="connector-label approach"
+        title="Schematic connector, not the simulated path"
+      >
+        Approach
+      </div>
+      <div class="schematic-badge">SCHEMATIC VIEW · NOT TO SCALE</div>
     </template>
 
     <div class="legend" aria-hidden="true">
-      <span><i class="swatch predicted"></i>Predicted</span>
       <span><i class="swatch flown"></i>Flown</span>
-      <span><i class="swatch zone"></i>Reception</span>
-      <span class="scale">1:1 distance · bodies true radius · cargo marker enlarged</span>
+      <span><i class="swatch predicted"></i>Planned</span>
     </div>
 
     <div v-if="failed" class="fallback" role="status">
       <span class="fallback-eye">VISUAL UNAVAILABLE</span>
       <h3>WebGL could not start</h3>
       <p>
-        The mission planner and deterministic simulation still work. Enable WebGL 2 or open the
-        build in a supported browser to see the Earth–Moon trajectory.
+        The mission planner and flight simulation still work. Enable WebGL 2 or open the build in
+        a supported browser to see the Earth–Moon route.
       </p>
     </div>
   </div>
@@ -131,27 +186,30 @@ onBeforeUnmount(() => {
   font-family: var(--font-mono);
   pointer-events: none;
   opacity: 0;
+  visibility: hidden;
   transition: opacity 0.3s ease;
   white-space: nowrap;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
-.body-label[data-visible='true'] {
+.body-label[data-visible='true'],
+.connector-label[data-visible='true'] {
   opacity: 1;
+  visibility: visible;
 }
 
 .body-label strong {
   display: block;
-  font-size: 8px;
-  letter-spacing: 0.18em;
+  font-size: 10px;
+  letter-spacing: 0.15em;
   font-weight: 500;
 }
 
 .body-label span {
   display: block;
   margin-top: 2px;
-  font-size: 6px;
-  letter-spacing: 0.09em;
+  font-size: 8.5px;
+  letter-spacing: 0.07em;
   color: var(--muted-dim);
 }
 
@@ -161,6 +219,45 @@ onBeforeUnmount(() => {
 
 .body-label.moon strong {
   color: var(--cyan);
+}
+
+.connector-label {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  padding: 2px 7px;
+  border: 1px solid rgba(255, 180, 59, 0.4);
+  border-radius: 999px;
+  background: rgba(6, 13, 24, 0.72);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  color: var(--amber);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.connector-label[data-visible='true'] {
+  visibility: visible;
+}
+
+.schematic-badge {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 2;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(9, 19, 31, 0.72);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  pointer-events: none;
 }
 
 .legend {
@@ -177,8 +274,8 @@ onBeforeUnmount(() => {
   background: rgba(9, 19, 31, 0.78);
   backdrop-filter: blur(8px);
   font-family: var(--font-mono);
-  font-size: 7px;
-  letter-spacing: 0.06em;
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
   color: var(--muted);
   pointer-events: none;
 }
@@ -200,20 +297,6 @@ onBeforeUnmount(() => {
   opacity: 0.7;
 }
 
-.swatch.zone {
-  width: 8px;
-  height: 8px;
-  border: 1px dashed var(--cyan);
-  border-radius: 50%;
-  opacity: 0.7;
-}
-
-.legend .scale {
-  color: var(--muted-dim);
-  border-left: 1px solid var(--line);
-  padding-left: 12px;
-}
-
 .fallback {
   position: absolute;
   inset: 0;
@@ -230,8 +313,8 @@ onBeforeUnmount(() => {
 
 .fallback-eye {
   font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.18em;
+  font-size: 10px;
+  letter-spacing: 0.16em;
   color: var(--amber);
 }
 
@@ -241,14 +324,23 @@ onBeforeUnmount(() => {
 }
 
 .fallback p {
-  max-width: 420px;
-  font-size: 11px;
+  max-width: 460px;
+  font-size: 13px;
   line-height: 1.6;
   color: var(--muted);
 }
 
 @media (max-height: 720px) {
   .legend {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .legend,
+  .body-label,
+  .connector-label,
+  .schematic-badge {
     display: none;
   }
 }

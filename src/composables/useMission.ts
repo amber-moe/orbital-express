@@ -1,22 +1,27 @@
 import { markRaw, onMounted, onUnmounted, shallowRef, type ShallowRef } from 'vue'
 import { gameData } from '../game/data'
 import { MissionController } from '../game/missionController'
-import type { MissionConfig, MissionSnapshot } from '../game/types'
+import type { MissionConfig, MissionSnapshot, Resources } from '../game/types'
 
 export interface UseMission {
   snapshot: ShallowRef<MissionSnapshot>
-  controller: MissionController
+  controller: ShallowRef<MissionController>
   setConfig: (patch: Partial<MissionConfig>) => void
-  launch: () => void
-  retry: () => void
+  launch: () => boolean
+  retry: () => boolean
+  startSession: (config: MissionConfig, resources?: Resources) => void
 }
 
 export function useMission(): UseMission {
-  const controller = markRaw(new MissionController(gameData))
-  const snapshot = shallowRef<MissionSnapshot>(controller.getSnapshot())
-  controller.subscribe((next) => {
-    snapshot.value = next
-  })
+  const controller = shallowRef<MissionController>(markRaw(new MissionController(gameData)))
+  const snapshot = shallowRef<MissionSnapshot>(controller.value.getSnapshot())
+
+  function attach(next: MissionController): void {
+    next.subscribe((value) => {
+      if (controller.value === next) snapshot.value = value
+    })
+  }
+  attach(controller.value)
 
   let raf = 0
   let lastTime = 0
@@ -25,7 +30,7 @@ export function useMission(): UseMission {
     if (lastTime === 0 || time < lastTime) lastTime = time
     const elapsed = (time - lastTime) / 1000
     lastTime = time
-    controller.tick(elapsed)
+    controller.value.tick(elapsed)
     raf = requestAnimationFrame(frame)
   }
 
@@ -48,13 +53,15 @@ export function useMission(): UseMission {
     snapshot,
     controller,
     setConfig: (patch) => {
-      controller.setConfig(patch)
+      controller.value.setConfig(patch)
     },
-    launch: () => {
-      controller.launch()
-    },
-    retry: () => {
-      controller.retry()
+    launch: () => controller.value.launch(),
+    retry: () => controller.value.retry(),
+    startSession: (config, resources) => {
+      const next = markRaw(new MissionController(gameData, null, config, resources))
+      controller.value = next
+      attach(next)
+      snapshot.value = next.getSnapshot()
     },
   }
 }

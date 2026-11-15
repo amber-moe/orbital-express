@@ -67,7 +67,7 @@ const delivered = computed(
     </ol>
     <div class="meta">
       <span class="dot" aria-hidden="true"></span>
-      DETERMINISTIC PREVIEW · FIXED 4 s STEP
+      MISSION CONTROL · LIVE FLIGHT
     </div>
   </footer>
 </template>
@@ -78,7 +78,7 @@ const delivered = computed(
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  min-height: 68px;
+  min-height: 74px;
   padding: 0 24px;
   border-top: 1px solid var(--line);
   background: rgba(6, 13, 24, 0.9);
@@ -118,14 +118,14 @@ li:not(:last-child).done::after {
 
 .num {
   flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   display: grid;
   place-items: center;
   border: 1px solid var(--line);
   border-radius: 50%;
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 10px;
   color: var(--muted-dim);
 }
 
@@ -138,16 +138,16 @@ li:not(:last-child).done::after {
 
 .label strong {
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   color: var(--muted-dim);
 }
 
 .label small {
-  font-size: 8px;
+  margin-top: 1px;
+  font-size: 10px;
   color: var(--muted-dim);
-  display: none;
 }
 
 li.active .num {
@@ -194,8 +194,8 @@ li.error .label strong {
   align-items: center;
   gap: 7px;
   font-family: var(--font-mono);
-  font-size: 7px;
-  letter-spacing: 0.12em;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
   color: var(--muted-dim);
   white-space: nowrap;
 }
@@ -213,6 +213,28 @@ li.error .label strong {
   }
   .label small {
     display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .progress {
+    gap: 10px;
+    min-height: 64px;
+    padding: 0 14px;
+  }
+  .num {
+    width: 24px;
+    height: 24px;
+    font-size: 9px;
+  }
+  .label {
+    display: none;
+  }
+  li {
+    gap: 0;
+  }
+  li:not(:last-child)::after {
+    margin: 0 8px;
   }
 }
 </style>

@@ -1,9 +1,9 @@
 import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 
-// Relative base so the production build also works when served from a sub-path.
+// GitHub Actions builds under the repository sub-path; local builds stay relative.
 export default defineConfig({
-  base: './',
+  base: process.env.GITHUB_ACTIONS ? '/orbital-express/' : './',
   plugins: [vue()],
   build: {
     target: 'es2020',

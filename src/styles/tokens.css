@@ -6,8 +6,8 @@
   --panel-raised: #122234;
   --panel-soft: rgba(13, 25, 38, 0.86);
   --ivory: #e9f0f3;
-  --muted: #91a4b5;
-  --muted-dim: #64798b;
+  --muted: #b6c7d4;
+  --muted-dim: #8fa3b4;
   --cyan: #4ce4d1;
   --cyan-soft: rgba(76, 228, 209, 0.14);
   --cyan-line: rgba(76, 228, 209, 0.36);
@@ -15,8 +15,8 @@
   --amber-soft: rgba(255, 180, 59, 0.13);
   --error: #ff6b6b;
   --error-soft: rgba(255, 107, 107, 0.12);
-  --line: rgba(145, 164, 181, 0.18);
-  --line-strong: rgba(145, 164, 181, 0.3);
+  --line: rgba(145, 164, 181, 0.24);
+  --line-strong: rgba(145, 164, 181, 0.38);
   --font-sans: "Avenir Next", "Helvetica Neue", Helvetica, Arial, ui-sans-serif, sans-serif;
   --font-mono: "SFMono-Regular", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
   --radius-sm: 4px;
@@ -44,11 +44,23 @@ body {
     var(--ink);
   color: var(--ivory);
   font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.45;
+  font-size: 15px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow: hidden;
+}
+
+/*
+ * Below the single-column breakpoint the mission config panel sits under the
+ * flight view, so the page itself must scroll. Keep this rule next to the base
+ * `body { overflow: hidden }`: a `:global(body)` override in App.vue loses the
+ * cascade because tokens.css is imported after App.vue.
+ */
+@media (max-width: 980px) {
+  body {
+    overflow: auto;
+  }
 }
 
 button,

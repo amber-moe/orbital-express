@@ -6,6 +6,13 @@ export interface OutcomeCopy {
   tone: 'success' | 'warning' | 'failure'
 }
 
+/** Presentation-only context; the simulation never reads this. */
+export interface OutcomeCopyContext {
+  cargoName: string
+  orderLabel: string
+  destination: string
+}
+
 function speed(value: number | null): string {
   return value === null ? 'unknown' : `${value.toFixed(3)} km/s`
 }
@@ -20,14 +27,20 @@ export function formatDuration(totalSeconds: number): string {
   return `${minutes}m`
 }
 
-export function describeOutcome(outcome: Outcome): OutcomeCopy {
+export function describeOutcome(
+  outcome: Outcome,
+  context?: OutcomeCopyContext,
+): OutcomeCopy {
+  const destination = context?.destination ?? 'The receiving depot'
+  const cargoName = context?.cargoName ?? 'the cargo'
+  const orderLabel = context?.orderLabel ?? 'this contract'
   switch (outcome.kind) {
     case 'delivered':
       return {
         title: 'Delivered',
-        detail: `Selene Depot accepted ${outcome.deliveredQuantity} crate${
+        detail: `${destination} accepted ${outcome.deliveredQuantity} crate${
           outcome.deliveredQuantity === 1 ? '' : 's'
-        } of construction supplies. Terminal relative speed was ${speed(
+        } of ${cargoName}. Terminal relative speed was ${speed(
           outcome.relativeSpeedKms,
         )}; the finite brake used ${outcome.requiredBrakeKms?.toFixed(3) ?? '—'} km/s.`,
         tone: 'success',
@@ -35,9 +48,9 @@ export function describeOutcome(outcome: Outcome): OutcomeCopy {
     case 'contract-shortfall':
       return {
         title: 'Partial delivery',
-        detail: `The depot accepted ${outcome.deliveredQuantity} crate${
+        detail: `${destination} accepted ${outcome.deliveredQuantity} crate${
           outcome.deliveredQuantity === 1 ? '' : 's'
-        }, but First Delivery requires ${outcome.requiredQuantity}. Reception succeeded; the contract did not.`,
+        } of ${cargoName}, but ${orderLabel} requires ${outcome.requiredQuantity}. Reception succeeded; the contract did not.`,
         tone: 'warning',
       }
     case 'insufficient-braking':

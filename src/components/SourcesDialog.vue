@@ -83,9 +83,11 @@ watch(
           <li>Continuous-thrust guidance, navigation, landing dynamics and terrain.</li>
         </ul>
         <p class="note">
-          The Moon is held fixed in an Earth-centred inertial frame. Distances and the trajectory are
-          drawn to scale; the cargo marker is enlarged for visibility. See
-          <code>docs/MODEL_NOTES.md</code> and <code>docs/SOURCES.md</code> in the repository.
+          The Moon is held fixed in an Earth-centred inertial frame. The overview is a schematic:
+          Earth and the Moon are enlarged for legibility, and the simulated path is clipped where it
+          would enter a visual body, with labelled dashed connectors. Physical radii, positions and
+          outcomes are unchanged. See the project <code>README.md</code> for
+          scope and limitations.
         </p>
       </section>
 
@@ -103,7 +105,7 @@ watch(
   border: 0;
   padding: 0;
   background: transparent;
-  width: min(680px, calc(100vw - 32px));
+  width: min(720px, calc(100vw - 32px));
   max-height: calc(100vh - 40px);
   color: var(--ivory);
 }
@@ -120,21 +122,21 @@ watch(
 
 .eyebrow {
   font-family: var(--font-mono);
-  font-size: 7px;
-  letter-spacing: 0.18em;
+  font-size: 10px;
+  letter-spacing: 0.16em;
   color: var(--muted-dim);
 }
 
 h2 {
-  margin-top: 3px;
-  font-size: 24px;
+  margin-top: 4px;
+  font-size: 27px;
   font-weight: 600;
 }
 
 header p {
-  margin-top: 10px;
-  font-size: 11px;
-  line-height: 1.55;
+  margin-top: 11px;
+  font-size: 13px;
+  line-height: 1.6;
   color: var(--muted);
 }
 
@@ -146,11 +148,11 @@ section {
 
 h3 {
   font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.14em;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
   color: var(--cyan);
   font-weight: 500;
-  margin-bottom: 8px;
+  margin-bottom: 9px;
   text-transform: uppercase;
 }
 
@@ -164,7 +166,7 @@ dl div {
   display: flex;
   justify-content: space-between;
   gap: 18px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 dt {
@@ -174,7 +176,7 @@ dt {
 dd {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11.5px;
   color: var(--ivory);
   text-align: right;
 }
@@ -187,8 +189,8 @@ ul {
 }
 
 li {
-  font-size: 10px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.55;
   color: var(--muted);
 }
 
@@ -198,21 +200,21 @@ li strong {
 }
 
 .links {
-  margin-top: 9px;
-  font-size: 9px;
+  margin-top: 10px;
+  font-size: 11.5px;
   color: var(--muted-dim);
 }
 
 .note {
-  margin-top: 9px;
-  font-size: 9px;
-  line-height: 1.5;
+  margin-top: 10px;
+  font-size: 11.5px;
+  line-height: 1.55;
   color: var(--muted-dim);
 }
 
 code {
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
   color: var(--muted);
 }
 
@@ -223,13 +225,13 @@ footer {
 }
 
 .close {
-  padding: 8px 16px;
+  padding: 10px 18px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: transparent;
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
 }

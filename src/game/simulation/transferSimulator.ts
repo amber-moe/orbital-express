@@ -80,7 +80,10 @@ function outcomeAt(
     requiredBrakeKms: extras.requiredBrakeKms ?? null,
     brakeRemainingKms: state.brakeRemainingKms,
     maxArrivalSpeedKms: context.maxArrivalSpeedKms,
-    deliveredQuantity: context.deliveredQuantity,
+    deliveredQuantity:
+      kind === 'delivered' || kind === 'contract-shortfall'
+        ? context.deliveredQuantity
+        : 0,
     requiredQuantity: context.requiredQuantity,
     closestApproachKm: state.closestMoonDistanceKm,
     impactSpeedKms: extras.impactSpeedKms ?? null,

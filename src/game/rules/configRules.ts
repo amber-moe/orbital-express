@@ -10,6 +10,13 @@ import type {
   Resources,
   ValidationResult,
 } from '../types'
+import {
+  DEFAULT_RELEASE_SPEED_SCALE,
+  RELEASE_SPEED_SCALE_DETENTS,
+  isReleaseSpeedScaleInRange,
+  quantizeReleaseSpeedScale,
+  resolveEffectiveProfile,
+} from '../releaseSpeed'
 import { computeCentrifuge, buildDepartureState } from '../simulation/departureModel'
 import { runTransfer, type TransferContext } from '../simulation/transferSimulator'
 
@@ -23,6 +30,7 @@ export function configKey(config: MissionConfig): string {
     config.protectionId,
     config.moduleId,
     config.profileId,
+    quantizeReleaseSpeedScale(config.releaseSpeedScale).toFixed(3),
   ].join('|')
 }
 
@@ -36,7 +44,125 @@ export function defaultConfig(data: GameData): MissionConfig {
     protectionId: 'reinforced',
     moduleId: 'large',
     profileId: profile.id,
+    releaseSpeedScale: DEFAULT_RELEASE_SPEED_SCALE,
   }
+}
+
+export function configForContract(data: GameData, contractId: string): MissionConfig {
+  const contract = getContract(data, contractId)
+  const profile = firstVerifiedProfile(data)
+  const quantity = contract.allowedQuantities.includes(
+    contract.requiredQuantity as MissionConfig['quantity'],
+  )
+    ? (contract.requiredQuantity as MissionConfig['quantity'])
+    : contract.allowedQuantities[0]
+  if (!quantity) throw new Error(`Contract ${contractId} has no allowed quantity`)
+  return {
+    contractId: contract.id,
+    cargoId: contract.cargoId,
+    quantity,
+    protectionId: contract.recommendedProtectionId,
+    moduleId: contract.recommendedModuleId,
+    profileId: profile.id,
+    releaseSpeedScale: quantizeReleaseSpeedScale(contract.recommendedReleaseSpeedScale),
+  }
+}
+
+export interface OrderCostEstimates {
+  launchFrom: number
+  launchTo: number
+  successFrom: number | null
+  successTo: number | null
+}
+
+const orderCostCache = new Map<string, OrderCostEstimates>()
+
+/**
+ * Cost estimates are computed once per contract and cached in the module.
+ * "Launchable" includes underfilled or risky loadouts that pass hard checks;
+ * "verified delivery" requires the full contract quantity and an actual
+ * simulator-confirmed delivery. Both are presentation/planning data only.
+ */
+export function estimateOrderCosts(
+  data: GameData,
+  contractId: string,
+): OrderCostEstimates {
+  const cached = orderCostCache.get(contractId)
+  if (cached) return cached
+
+  const contract = getContract(data, contractId)
+  const cargo = getCargo(data, contract.cargoId)
+  const resources = initialResources(contract, cargo)
+  const profile = firstVerifiedProfile(data)
+  let launchFrom = Number.POSITIVE_INFINITY
+  let launchTo = 0
+  let successFrom: number | null = null
+  let successTo: number | null = null
+
+  const makeConfig = (
+    quantity: number,
+    protectionId: 'standard' | 'reinforced',
+    moduleId: 'small' | 'large',
+    releaseSpeedScale: number,
+  ) => ({
+    contractId: contract.id,
+    cargoId: contract.cargoId,
+    quantity: quantity as MissionConfig['quantity'],
+    protectionId,
+    moduleId,
+    profileId: profile.id,
+    releaseSpeedScale,
+  })
+
+  for (const quantity of contract.allowedQuantities) {
+    for (const protectionId of ['standard', 'reinforced'] as const) {
+      for (const moduleId of ['small', 'large'] as const) {
+        for (const releaseSpeedScale of RELEASE_SPEED_SCALE_DETENTS) {
+          const config = makeConfig(quantity, protectionId, moduleId, releaseSpeedScale)
+          const totals = computeTotals(config, data)
+          if (!validateConfig(config, totals, resources, data).ok) continue
+          launchFrom = Math.min(launchFrom, totals.launchCredits)
+          launchTo = Math.max(launchTo, totals.launchCredits)
+        }
+      }
+    }
+  }
+
+  const requiredQuantity = contract.requiredQuantity
+  if (contract.allowedQuantities.includes(requiredQuantity as MissionConfig['quantity'])) {
+    // Cost does not depend on the speed detent. For each protection/module
+    // loadout, stop at the first detent that actually delivers. This keeps the
+    // successful range simulator-derived without integrating every detent.
+    const successScanSpeeds = [0.98, 0.99, 1, 0.97, 1.01, 1.02]
+    for (const protectionId of ['standard', 'reinforced'] as const) {
+      for (const moduleId of ['small', 'large'] as const) {
+        for (const releaseSpeedScale of successScanSpeeds) {
+          const config = makeConfig(
+            requiredQuantity,
+            protectionId,
+            moduleId,
+            releaseSpeedScale,
+          )
+          const totals = computeTotals(config, data)
+          if (!validateConfig(config, totals, resources, data).ok) continue
+          const prediction = predictMission(config, data, totals)
+          if (prediction.outcome.kind !== 'delivered') continue
+          successFrom = Math.min(successFrom ?? Number.POSITIVE_INFINITY, totals.launchCredits)
+          successTo = Math.max(successTo ?? 0, totals.launchCredits)
+          break
+        }
+      }
+    }
+  }
+
+  const estimates: OrderCostEstimates = {
+    launchFrom: Number.isFinite(launchFrom) ? Math.round(launchFrom) : 0,
+    launchTo: Math.round(launchTo),
+    successFrom: successFrom === null ? null : Math.round(successFrom),
+    successTo: successTo === null ? null : Math.round(successTo),
+  }
+  orderCostCache.set(contractId, estimates)
+  return estimates
 }
 
 export function firstContract(data: GameData): ContractData {
@@ -80,11 +206,13 @@ export function initialResources(contract: ContractData, cargo: CargoDefinition)
 export function computeTotals(config: MissionConfig, data: GameData): MissionTotals {
   const contract = getContract(data, config.contractId)
   const cargo = getCargo(data, config.cargoId)
-  const profile = getProfile(data, config.profileId)
+  const baseProfile = getProfile(data, config.profileId)
   const protection = data.equipment.protection[config.protectionId]
   const module = data.equipment.modules[config.moduleId]
   const capsule = data.equipment.capsule
   const quantity = config.quantity
+  const releaseSpeedScale = quantizeReleaseSpeedScale(config.releaseSpeedScale)
+  const profile = resolveEffectiveProfile(baseProfile, releaseSpeedScale)
 
   const cargoMassKg = cargo.unitMassKg * quantity
   const cargoVolume = cargo.unitVolume * quantity
@@ -111,6 +239,8 @@ export function computeTotals(config: MissionConfig, data: GameData): MissionTot
     launchLoadG: centrifuge.launchLoadG,
     loadLimitG,
     releaseSpeedKms: centrifuge.releaseSpeedKms,
+    releaseSpeedScale,
+    rotorRpm: centrifuge.rotorRpm,
     rotorEnergyGj: centrifuge.rotorEnergyGj,
     launchCredits:
       cargo.unitCostCredits * quantity +
@@ -133,8 +263,12 @@ export function validateConfig(
   const warnings: string[] = []
   const contract = getContract(data, config.contractId)
   const cargo = getCargo(data, config.cargoId)
-  const profile = getProfile(data, config.profileId)
+  const baseProfile = getProfile(data, config.profileId)
+  const profile = resolveEffectiveProfile(baseProfile, config.releaseSpeedScale)
 
+  if (!isReleaseSpeedScaleInRange(config.releaseSpeedScale)) {
+    blockers.push('The release-speed setting is outside the supported range.')
+  }
   if (config.cargoId !== contract.cargoId) {
     blockers.push(`This contract carries ${cargo.name}, not the selected cargo.`)
   }
@@ -242,7 +376,8 @@ export function predictMission(
   data: GameData,
   totals: MissionTotals,
 ): Prediction {
-  const profile = getProfile(data, config.profileId)
+  const baseProfile = getProfile(data, config.profileId)
+  const profile = resolveEffectiveProfile(baseProfile, config.releaseSpeedScale)
   const departure = buildDepartureState(
     profile,
     totals.totalMassKg,

@@ -1,16 +1,23 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { GameMode } from '../game/company'
 import type { MissionPhase } from '../game/types'
 
 const props = defineProps<{
   credits: number
+  creditLabel: string
   energyGj: number
   phase: MissionPhase
   contractComplete: boolean
+  mode: GameMode
+  orderLabel: string
+  jobsDisabled: boolean
 }>()
 
+const emit = defineEmits<{ jobs: [] }>()
+
 const status = computed(() => {
-  if (props.contractComplete) return 'CONTRACT COMPLETE'
+  if (props.phase === 'RESULT' && props.contractComplete) return 'CONTRACT COMPLETE'
   switch (props.phase) {
     case 'CONFIGURING':
       return 'PLANNING'
@@ -24,8 +31,7 @@ const status = computed(() => {
 })
 
 const statusClass = computed(() => {
-  if (props.contractComplete) return 'ok'
-  if (props.phase === 'RESULT') return 'warn'
+  if (props.phase === 'RESULT') return props.contractComplete ? 'ok' : 'warn'
   return 'live'
 })
 </script>
@@ -44,12 +50,23 @@ const statusClass = computed(() => {
       <span class="route-node">EARTH</span>
       <span class="route-line" aria-hidden="true"><span class="route-pulse"></span></span>
       <span class="route-node moon">MOON</span>
-      <span class="route-label">FIRST DELIVERY</span>
+      <span class="route-label">{{ orderLabel }}</span>
     </div>
+
+    <button
+      type="button"
+      class="jobs-button"
+      :disabled="jobsDisabled"
+      :title="jobsDisabled ? 'Jobs are locked during an active flight' : 'Open jobs and company'"
+      @click="emit('jobs')"
+    >
+      <span class="mode-label">{{ mode === 'company' ? 'COMPANY' : 'PRACTICE' }}</span>
+      <span class="jobs-label">JOBS &amp; COMPANY</span>
+    </button>
 
     <div class="resources">
       <div class="resource">
-        <span class="resource-label">BUDGET</span>
+        <span class="resource-label">{{ creditLabel }}</span>
         <span class="resource-value">{{ Math.round(credits).toLocaleString('en-US') }}<small> cr</small></span>
       </div>
       <div class="resource">
@@ -69,7 +86,7 @@ const statusClass = computed(() => {
   display: flex;
   align-items: center;
   gap: 28px;
-  min-height: 66px;
+  min-height: 72px;
   padding: 0 24px;
   border-bottom: 1px solid var(--line);
   background: rgba(6, 13, 24, 0.88);
@@ -119,14 +136,14 @@ const statusClass = computed(() => {
 }
 
 .wordmark {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
-  letter-spacing: 0.19em;
+  letter-spacing: 0.17em;
 }
 
 .company {
-  font-size: 8px;
-  letter-spacing: 0.2em;
+  font-size: 10px;
+  letter-spacing: 0.18em;
   color: var(--muted-dim);
 }
 
@@ -140,8 +157,8 @@ const statusClass = computed(() => {
 
 .route-node {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-size: 11px;
+  letter-spacing: 0.12em;
   color: var(--muted);
 }
 
@@ -169,10 +186,46 @@ const statusClass = computed(() => {
 
 .route-label {
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.16em;
+  font-size: 10px;
+  letter-spacing: 0.14em;
   color: var(--muted-dim);
   margin-left: 2px;
+  white-space: nowrap;
+}
+
+.jobs-button {
+  display: grid;
+  gap: 1px;
+  flex: 0 0 auto;
+  min-width: 112px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(18, 34, 52, 0.45);
+  text-align: left;
+}
+
+.jobs-button:hover:not(:disabled) {
+  border-color: var(--cyan-line);
+}
+
+.jobs-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mode-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+}
+
+.jobs-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--ivory);
   white-space: nowrap;
 }
 
@@ -190,20 +243,20 @@ const statusClass = computed(() => {
 }
 
 .resource-label {
-  font-size: 8px;
-  letter-spacing: 0.16em;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
   color: var(--muted-dim);
 }
 
 .resource-value {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 16px;
   font-variant-numeric: tabular-nums;
   color: var(--ivory);
 }
 
 .resource-value small {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
 }
 
@@ -211,12 +264,12 @@ const statusClass = computed(() => {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 5px 10px;
+  padding: 6px 11px;
   border: 1px solid var(--line);
   border-radius: 999px;
   font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.14em;
+  font-size: 10px;
+  letter-spacing: 0.12em;
   color: var(--muted);
   white-space: nowrap;
 }
@@ -281,6 +334,50 @@ const statusClass = computed(() => {
   }
   .resources {
     gap: 14px;
+  }
+}
+
+@media (max-width: 860px) {
+  .route {
+    display: none;
+  }
+  .brand {
+    min-width: 0;
+  }
+  .header {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .header {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    min-height: 0;
+    padding: 10px 14px;
+  }
+  .route {
+    display: none;
+  }
+  .brand {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .wordmark {
+    font-size: 13px;
+    letter-spacing: 0.13em;
+  }
+  .company {
+    display: none;
+  }
+  .resources {
+    gap: 12px;
+  }
+  .resource {
+    min-width: 0;
+  }
+  .status {
+    display: none;
   }
 }
 </style>

@@ -132,6 +132,18 @@ function validateCargo(value: unknown): CargoCatalog {
       id,
       name: string(item.name, `cargo.${id}.name`),
       description: string(item.description, `cargo.${id}.description`),
+      accentColor: (() => {
+        const value = string(item.accentColor, `cargo.${id}.accentColor`)
+        if (!/^#[0-9a-fA-F]{6}$/.test(value)) fail(`cargo.${id}.accentColor must be a hex colour`)
+        return value
+      })(),
+      visualForm: (() => {
+        const value = string(item.visualForm, `cargo.${id}.visualForm`)
+        if (value !== 'crate' && value !== 'pack' && value !== 'case') {
+          fail(`cargo.${id}.visualForm is invalid`)
+        }
+        return value
+      })(),
       unitMassKg: positive(item.unitMassKg, `cargo.${id}.unitMassKg`),
       unitVolume: positive(item.unitVolume, `cargo.${id}.unitVolume`),
       unitCostCredits: nonNegative(item.unitCostCredits, `cargo.${id}.unitCostCredits`),
@@ -272,6 +284,7 @@ function validateContracts(
     result[id] = {
       id,
       name: string(contract.name, `contracts.${id}.name`),
+      orderLabel: string(contract.orderLabel, `contracts.${id}.orderLabel`),
       client: string(contract.client, `contracts.${id}.client`),
       brief: string(contract.brief, `contracts.${id}.brief`),
       cargoId,
@@ -282,6 +295,29 @@ function validateContracts(
       launchFeeCredits: nonNegative(contract.launchFeeCredits, `contracts.${id}.launchFeeCredits`),
       rewardCredits: nonNegative(contract.rewardCredits, `contracts.${id}.rewardCredits`),
       destination: string(contract.destination, `contracts.${id}.destination`),
+      recommendedProtectionId: (() => {
+        const value = string(
+          contract.recommendedProtectionId,
+          `contracts.${id}.recommendedProtectionId`,
+        )
+        if (value !== 'standard' && value !== 'reinforced') {
+          fail(`contracts.${id}.recommendedProtectionId is invalid`)
+        }
+        return value
+      })(),
+      recommendedModuleId: (() => {
+        const value = string(contract.recommendedModuleId, `contracts.${id}.recommendedModuleId`)
+        if (value !== 'small' && value !== 'large') {
+          fail(`contracts.${id}.recommendedModuleId is invalid`)
+        }
+        return value
+      })(),
+      recommendedReleaseSpeedScale: number(
+        contract.recommendedReleaseSpeedScale,
+        `contracts.${id}.recommendedReleaseSpeedScale`,
+        0.97,
+        1.02,
+      ),
     }
   }
   if (Object.keys(result).length === 0) fail('contract catalog is empty')

@@ -46,10 +46,14 @@ export interface ModelAssumptionsData {
   }
 }
 
+export type CargoVisualForm = 'crate' | 'pack' | 'case'
+
 export interface CargoDefinition {
   id: string
   name: string
   description: string
+  accentColor: string
+  visualForm: CargoVisualForm
   unitMassKg: number
   unitVolume: number
   unitCostCredits: number
@@ -117,6 +121,8 @@ export type LaunchProfileCatalog = Record<string, LaunchProfileData>
 export interface ContractData {
   id: string
   name: string
+  /** Short player-facing job name used in the jobs list and route bar. */
+  orderLabel: string
   client: string
   brief: string
   cargoId: string
@@ -127,6 +133,9 @@ export interface ContractData {
   launchFeeCredits: number
   rewardCredits: number
   destination: string
+  recommendedProtectionId: ProtectionId
+  recommendedModuleId: ModuleId
+  recommendedReleaseSpeedScale: number
 }
 
 export type ContractCatalog = Record<string, ContractData>
@@ -147,6 +156,12 @@ export interface MissionConfig {
   protectionId: ProtectionId
   moduleId: ModuleId
   profileId: string
+  /**
+   * Multiplier on the profile's rotor angular speed (and therefore release
+   * speed). Quantized to the finite detents in `releaseSpeed.ts`; 1 is the
+   * verified default. Release direction never changes.
+   */
+  releaseSpeedScale: number
 }
 
 export interface MissionTotals {
@@ -163,6 +178,8 @@ export interface MissionTotals {
   launchLoadG: number
   loadLimitG: number
   releaseSpeedKms: number
+  releaseSpeedScale: number
+  rotorRpm: number
   rotorEnergyGj: number
   launchCredits: number
   brakeReserveKms: number

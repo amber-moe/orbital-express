@@ -6,6 +6,7 @@ import type {
   MissionSnapshot,
   MissionTotals,
   Outcome,
+  OutcomeKind,
   Prediction,
   PredictionSummary,
   Resources,
@@ -33,6 +34,10 @@ import {
   type TransferContext,
 } from './simulation/transferSimulator'
 import { describeOutcome } from './outcomeMessages'
+import {
+  quantizeReleaseSpeedScale,
+  resolveEffectiveProfile,
+} from './releaseSpeed'
 
 export interface FrameState {
   phase: MissionPhase
@@ -43,12 +48,20 @@ export interface FrameState {
   predictionPoints: Vec2[]
   predictionVersion: number
   simTimeSeconds: number
+  /** Result kind, exposed for rendering-only camera framing. */
+  resultKind: OutcomeKind | null
 }
 
 export type SnapshotListener = (snapshot: MissionSnapshot) => void
 
 const LIVE_TRAIL_SAMPLE_SECONDS = 60
 const MAX_LIVE_TRAIL_POINTS = 12000
+/**
+ * Twelve loadouts × six release-speed detents = 72 possible keys. Keeping a
+ * bounded prefix of the cache prevents unbounded growth while retaining the
+ * most recent experiments.
+ */
+const MAX_PREDICTION_CACHE_ENTRIES = 48
 
 export class MissionController {
   private readonly data: GameData
@@ -92,15 +105,21 @@ export class MissionController {
     predictionPoints: [],
     predictionVersion: 0,
     simTimeSeconds: 0,
+    resultKind: null,
   }
 
-  constructor(data: GameData, listener: SnapshotListener | null = null, config?: MissionConfig) {
+  constructor(
+    data: GameData,
+    listener: SnapshotListener | null = null,
+    config?: MissionConfig,
+    resources?: Resources,
+  ) {
     this.data = data
     this.listener = listener
     this.config = config ? { ...config } : defaultConfig(data)
     const contract = getContract(data, this.config.contractId)
     const cargo = getCargo(data, contract.cargoId)
-    this.resources = initialResources(contract, cargo)
+    this.resources = resources ? { ...resources } : initialResources(contract, cargo)
     this.totals = computeTotals(this.config, data)
     this.validation = validateConfig(this.config, this.totals, this.resources, data)
     this.refreshPrediction()
@@ -116,7 +135,17 @@ export class MissionController {
   getSnapshot(): MissionSnapshot {
     const copy = this.currentPrediction ? this.toSummary(this.currentPrediction) : null
     const copyOfResult = this.result
-    const outcomeCopy = copyOfResult ? describeOutcome(copyOfResult) : null
+    const contract = getContract(this.data, this.config.contractId)
+    const cargo = getCargo(this.data, this.config.cargoId)
+    const destination =
+      contract.destination.split('·').pop()?.trim() ?? contract.destination
+    const outcomeCopy = copyOfResult
+      ? describeOutcome(copyOfResult, {
+          cargoName: cargo.name,
+          orderLabel: contract.orderLabel,
+          destination,
+        })
+      : null
     return {      phase: this.phase,
       config: { ...this.config },
       resources: { ...this.resources },
@@ -153,6 +182,9 @@ export class MissionController {
   setConfig(patch: Partial<MissionConfig>): boolean {
     if (this.phase !== 'CONFIGURING') return false
     const next: MissionConfig = { ...this.config, ...patch }
+    if (patch.releaseSpeedScale !== undefined) {
+      next.releaseSpeedScale = quantizeReleaseSpeedScale(patch.releaseSpeedScale)
+    }
     if (configKey(next) === configKey(this.config)) return false
     this.config = next
     this.totals = computeTotals(this.config, this.data)
@@ -175,6 +207,7 @@ export class MissionController {
 
     this.attempt += 1
     this.result = null
+    this.frame.resultKind = null
     this.contractComplete = false
     this.settled = false
     this.phase = 'SPINNING_UP'
@@ -192,7 +225,10 @@ export class MissionController {
     this.approachFrom = null
     this.approachTo = null
 
-    const profile = getProfile(this.data, this.config.profileId)
+    const profile = resolveEffectiveProfile(
+      getProfile(this.data, this.config.profileId),
+      this.config.releaseSpeedScale,
+    )
     this.departure = buildDepartureState(
       profile,
       this.totals.totalMassKg,
@@ -276,6 +312,7 @@ export class MissionController {
     this.phaseTimer = 0
     this.phaseProgress = 0
     this.result = null
+    this.frame.resultKind = null
     this.contractComplete = false
     this.settled = false
     this.simState = null
@@ -407,6 +444,7 @@ export class MissionController {
     if (!result.outcome) return
     const outcome = result.outcome
     this.result = outcome
+    this.frame.resultKind = outcome.kind
 
     if (outcome.kind === 'delivered' || outcome.kind === 'contract-shortfall') {
       this.phase = 'APPROACH'
@@ -468,6 +506,11 @@ export class MissionController {
     try {
       const prediction = predictMission(this.config, this.data, this.totals)
       if (generation !== this.predictionGeneration) return
+      while (this.predictionCache.size >= MAX_PREDICTION_CACHE_ENTRIES) {
+        const oldest = this.predictionCache.keys().next().value
+        if (oldest === undefined) break
+        this.predictionCache.delete(oldest)
+      }
       this.predictionCache.set(key, prediction)
       this.predictionComputeCount += 1
       this.lastPredictionMs = prediction.computeMs
