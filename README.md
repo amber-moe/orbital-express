@@ -4,6 +4,8 @@ A browser mission-control game set in **Orbital Express**, a fictional Earth-bas
 
 **Play online:** https://amber-moe.github.io/orbital-express/
 
+**Demo deck:** [Orbital_Express_Demo.pdf](Orbital_Express_Demo.pdf)
+
 Built with **Vue 3**, **TypeScript**, **Vite**, **Three.js**, and a standalone TypeScript 2D physics module. No backend, database, accounts, routing, or third-party physics engine.
 
 ## Features
